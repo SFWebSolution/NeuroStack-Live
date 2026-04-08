@@ -3,18 +3,24 @@
 
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>NeuroStack Live</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>⚡ NeuroStack Live</h1>
+<header>
+  <div class="logo">NeuroStack Live</div>
+</header>
+
 <div id="status">Checking live status...</div>
 <video id="video" autoplay playsinline></video>
+
 <div class="chat-box" id="comments"></div>
+
 <div class="input-area">
   <input id="commentInput" placeholder="Type message...">
   <button onclick="sendComment()">Send</button>
@@ -26,7 +32,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-   apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
+  apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
   authDomain: "neurostack-d65f9.firebaseapp.com",
   projectId: "neurostack-d65f9",
 };
@@ -50,21 +56,20 @@ onSnapshot(doc(db,"live","status"),docSnap=>{
     const call = peer.call(data.streamId,null);
     call.on('stream', remoteStream=>{video.srcObject=remoteStream;});
 
-    // Setup chat
     const commentsRef = collection(db,"streams",data.streamId,"comments");
     onSnapshot(query(commentsRef,orderBy("time")),snapshot=>{
       commentsBox.innerHTML="";
       snapshot.forEach(doc=>{commentsBox.innerHTML+=`<p>${doc.data().text}</p>`;});
     });
 
-    window.sendComment=async()=>{
+    window.sendComment = async function(){
       const input = document.getElementById("commentInput");
       if(!input.value) return;
       await addDoc(commentsRef,{text:"Viewer: "+input.value,time:Date.now()});
       input.value="";
     }
 
-    window.like=async()=>{
+    window.like = async function(){
       await addDoc(collection(db,"streams",data.streamId,"likes"),{time:Date.now()});
     }
 

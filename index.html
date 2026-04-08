@@ -9,12 +9,13 @@
 <body>
 
 <header>
-  <div class="logo">⚡ NeuroStack Live (Host)</div>
+  <div class="logo">NeuroStack Live (Host)</div>
   <button onclick="startShare()">Go Live</button>
 </header>
 
-<video id="video" autoplay muted></video>
-<div id="link" style="padding:10px;color:#00f5ff;"></div>
+<video id="video" autoplay muted playsinline></video>
+<div id="link"></div>
+
 <div class="chat-box" id="comments"></div>
 
 <div class="input-area">
@@ -28,7 +29,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
+   apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
   authDomain: "neurostack-d65f9.firebaseapp.com",
   projectId: "neurostack-d65f9",
 };
@@ -43,25 +44,22 @@ const video = document.getElementById("video");
 
 peer.on('open', id => { currentStreamId = id; });
 
-async function startShare(){
+window.startShare = async function(){
   stream = await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
   video.srcObject = stream;
 
-  // Update live status in Firebase
   await setDoc(doc(db,"live","status"),{isLive:true,streamId:currentStreamId});
 
-  const baseUrl = window.location.href.replace("index.html","");
-  document.getElementById("link").innerHTML = "Share this permanent link:<br><b>"+baseUrl+"live.html</b>";
-
-  // Answer viewer calls
   peer.on('call', call => call.answer(stream));
 
-  // Stop live when stream ends
   stream.getTracks().forEach(track=>{
     track.onended=async()=>{await setDoc(doc(db,"live","status"),{isLive:false});};
   });
 
   setupChat(currentStreamId);
+
+  const baseUrl = window.location.href.replace("index.html","");
+  document.getElementById("link").innerHTML = "Share this permanent link:<br><b>"+baseUrl+"live.html</b>";
 }
 
 function setupChat(streamId){
@@ -88,4 +86,6 @@ function setupChat(streamId){
 
 </body>
 </html>
+
+
 
