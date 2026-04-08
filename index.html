@@ -16,88 +16,50 @@
 <video id="video" autoplay muted playsinline></video>
 <div id="link"></div>
 
-<div class="chat-box" id="comments"></div>
-
-<div class="input-area">
-  <input id="commentInput" placeholder="Type message...">
-  <button id="sendBtn">Send</button>
-  <button id="likeBtn">❤️ Like</button>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
-  authDomain: "neurostack-d65f9.firebaseapp.com",
-  projectId: "neurostack-d65f9",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let peer = new Peer();
-let stream;
-let currentStreamId;
+<script>
 const video = document.getElementById("video");
 
-// Peer ID setup
-peer.on('open', id => { currentStreamId = id; });
+// Use PeerJS free cloud server + always host ID = NeuroStack
+const peer = new Peer("NeuroStack", {
+  host: '0.peerjs.com', // PeerJS cloud server
+  port: 443,
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'turn:turn.anyfirewall.com:443?transport=tcp', username:'webrtc', credential:'webrtc' }
+    ]
+  }
+});
 
-// Attach functions to window so buttons can call them
-window.startShare = async function(){
-  stream = await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+let stream;
+
+// Start live stream
+window.startShare = async function() {
+  stream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
   video.srcObject = stream;
 
-  await setDoc(doc(db,"live","status"),{isLive:true,streamId:currentStreamId});
+  // Show viewer link
+  const baseUrl = window.location.href.replace("index.html","");
+  document.getElementById("link").innerHTML = `
+    Share this link with viewers:<br>
+    <b><a href="${baseUrl}live.html" target="_blank">${baseUrl}live.html</a></b>
+  `;
 
+  // Answer incoming calls automatically
   peer.on('call', call => call.answer(stream));
 
-  // Handle end of stream
-  stream.getTracks().forEach(track=>{
-    track.onended=async()=>{await setDoc(doc(db,"live","status"),{isLive:false});};
-  });
-
-  setupChat(currentStreamId);
-
-  const baseUrl = window.location.href.replace("index.html","");
-  document.getElementById("link").innerHTML = "Share this viewer link:<br><b>"+baseUrl+"live.html</b>";
-}
-
-function setupChat(streamId){
-  const commentsRef = collection(db,"streams",streamId,"comments");
-
-  window.sendComment = async function(){
-    const input = document.getElementById("commentInput");
-    if(!input.value) return;
-    await addDoc(commentsRef,{text:"Host: "+input.value,time:Date.now()});
-    input.value="";
-  }
-
-  window.like = async function(){
-    await addDoc(collection(db,"streams",streamId,"likes"),{time:Date.now()});
-  }
-
-  onSnapshot(query(commentsRef,orderBy("time")),snapshot=>{
-    const box = document.getElementById("comments");
-    box.innerHTML="";
-    snapshot.forEach(doc=>{box.innerHTML+=`<p>${doc.data().text}</p>`;});
+  // Stop live when stream ends
+  stream.getTracks().forEach(track => {
+    track.onended = () => alert("Live ended");
   });
 }
 
-// Add button event listeners
+// Button click
 document.getElementById("goLiveBtn").addEventListener("click", ()=>window.startShare());
-document.getElementById("sendBtn").addEventListener("click", ()=>window.sendComment());
-document.getElementById("likeBtn").addEventListener("click", ()=>window.like());
-
 </script>
 
 </body>
 </html>
-
-
-
-
 

@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,79 +16,44 @@
 <div id="status">Checking live status...</div>
 <video id="video" autoplay playsinline></video>
 
-<div class="chat-box" id="comments"></div>
-
-<div class="input-area">
-  <input id="commentInput" placeholder="Type message...">
-  <button id="sendBtn">Send</button>
-  <button id="likeBtn">❤️ Like</button>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
-  authDomain: "neurostack-d65f9.firebaseapp.com",
-  projectId: "neurostack-d65f9",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const statusText = document.getElementById("status");
+<script>
 const video = document.getElementById("video");
-const commentsBox = document.getElementById("comments");
-let peer = new Peer();
+const statusText = document.getElementById("status");
 
-// Attach viewer functions to window
-window.sendComment = ()=>{};
-window.like = ()=>{};
-
-onSnapshot(doc(db,"live","status"),docSnap=>{
-  if(!docSnap.exists()) return;
-  const data = docSnap.data();
-
-  if(data.isLive){
-    statusText.innerHTML="🔴 LIVE NOW";
-    video.style.display="block";
-
-    const call = peer.call(data.streamId,null);
-    call.on('stream', remoteStream=>{video.srcObject=remoteStream;});
-
-    const commentsRef = collection(db,"streams",data.streamId,"comments");
-
-    // Attach functions for buttons
-    window.sendComment = async function(){
-      const input = document.getElementById("commentInput");
-      if(!input.value) return;
-      await addDoc(commentsRef,{text:"Viewer: "+input.value,time:Date.now()});
-      input.value="";
-    }
-
-    window.like = async function(){
-      await addDoc(collection(db,"streams",data.streamId,"likes"),{time:Date.now()});
-    }
-
-    onSnapshot(query(commentsRef,orderBy("time")),snapshot=>{
-      commentsBox.innerHTML="";
-      snapshot.forEach(doc=>{commentsBox.innerHTML+=`<p>${doc.data().text}</p>`;});
-    });
-
-  } else {
-    statusText.innerHTML="⚫ Not Live Right Now";
-    video.style.display="none";
-    commentsBox.innerHTML="";
+// Viewer peer ID is random
+const peer = new Peer({
+  host: '0.peerjs.com',
+  port: 443,
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'turn:turn.anyfirewall.com:443?transport=tcp', username:'webrtc', credential:'webrtc' }
+    ]
   }
 });
 
-// Add button event listeners
-document.getElementById("sendBtn").addEventListener("click", ()=>window.sendComment());
-document.getElementById("likeBtn").addEventListener("click", ()=>window.like());
+// Connect to host "NeuroStack"
+function connectToHost() {
+  const call = peer.call("NeuroStack", null);
+  call.on('stream', remoteStream => {
+    video.srcObject = remoteStream;
+    statusText.innerText = "🔴 LIVE NOW";
+  });
+  call.on('error', () => {
+    statusText.innerText = "⚫ Not Live Right Now";
+  });
+}
 
+// Wait a moment and connect
+setTimeout(connectToHost, 1000);
 </script>
 
 </body>
 </html>
+
+
+
+
+
