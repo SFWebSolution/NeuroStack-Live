@@ -1,7 +1,5 @@
 
 
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,14 +21,15 @@
 
 <div class="input-area">
   <input id="commentInput" placeholder="Type message...">
-  <button onclick="sendComment()">Send</button>
-  <button onclick="like()">❤️ Like</button>
+  <button id="sendBtn">Send</button>
+  <button id="likeBtn">❤️ Like</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
   authDomain: "neurostack-d65f9.firebaseapp.com",
@@ -45,6 +44,10 @@ const video = document.getElementById("video");
 const commentsBox = document.getElementById("comments");
 let peer = new Peer();
 
+// Attach viewer functions to window
+window.sendComment = ()=>{};
+window.like = ()=>{};
+
 onSnapshot(doc(db,"live","status"),docSnap=>{
   if(!docSnap.exists()) return;
   const data = docSnap.data();
@@ -57,11 +60,8 @@ onSnapshot(doc(db,"live","status"),docSnap=>{
     call.on('stream', remoteStream=>{video.srcObject=remoteStream;});
 
     const commentsRef = collection(db,"streams",data.streamId,"comments");
-    onSnapshot(query(commentsRef,orderBy("time")),snapshot=>{
-      commentsBox.innerHTML="";
-      snapshot.forEach(doc=>{commentsBox.innerHTML+=`<p>${doc.data().text}</p>`;});
-    });
 
+    // Attach functions for buttons
     window.sendComment = async function(){
       const input = document.getElementById("commentInput");
       if(!input.value) return;
@@ -73,14 +73,23 @@ onSnapshot(doc(db,"live","status"),docSnap=>{
       await addDoc(collection(db,"streams",data.streamId,"likes"),{time:Date.now()});
     }
 
+    onSnapshot(query(commentsRef,orderBy("time")),snapshot=>{
+      commentsBox.innerHTML="";
+      snapshot.forEach(doc=>{commentsBox.innerHTML+=`<p>${doc.data().text}</p>`;});
+    });
+
   } else {
     statusText.innerHTML="⚫ Not Live Right Now";
     video.style.display="none";
     commentsBox.innerHTML="";
   }
 });
+
+// Add button event listeners
+document.getElementById("sendBtn").addEventListener("click", ()=>window.sendComment());
+document.getElementById("likeBtn").addEventListener("click", ()=>window.like());
+
 </script>
 
 </body>
 </html>
-

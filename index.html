@@ -10,7 +10,7 @@
 
 <header>
   <div class="logo">NeuroStack Live (Host)</div>
-  <button onclick="startShare()">Go Live</button>
+  <button id="goLiveBtn">Go Live</button>
 </header>
 
 <video id="video" autoplay muted playsinline></video>
@@ -20,16 +20,17 @@
 
 <div class="input-area">
   <input id="commentInput" placeholder="Type message...">
-  <button onclick="sendComment()">Send</button>
-  <button onclick="like()">❤️ Like</button>
+  <button id="sendBtn">Send</button>
+  <button id="likeBtn">❤️ Like</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+// Firebase config
 const firebaseConfig = {
-   apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
+  apiKey: "AIzaSyB6bSNbFZ90DO6_OTbhFEO-Jij20qLXJk0",
   authDomain: "neurostack-d65f9.firebaseapp.com",
   projectId: "neurostack-d65f9",
 };
@@ -42,8 +43,10 @@ let stream;
 let currentStreamId;
 const video = document.getElementById("video");
 
+// Peer ID setup
 peer.on('open', id => { currentStreamId = id; });
 
+// Attach functions to window so buttons can call them
 window.startShare = async function(){
   stream = await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
   video.srcObject = stream;
@@ -52,6 +55,7 @@ window.startShare = async function(){
 
   peer.on('call', call => call.answer(stream));
 
+  // Handle end of stream
   stream.getTracks().forEach(track=>{
     track.onended=async()=>{await setDoc(doc(db,"live","status"),{isLive:false});};
   });
@@ -59,7 +63,7 @@ window.startShare = async function(){
   setupChat(currentStreamId);
 
   const baseUrl = window.location.href.replace("index.html","");
-  document.getElementById("link").innerHTML = "Share this permanent link:<br><b>"+baseUrl+"live.html</b>";
+  document.getElementById("link").innerHTML = "Share this viewer link:<br><b>"+baseUrl+"live.html</b>";
 }
 
 function setupChat(streamId){
@@ -82,10 +86,18 @@ function setupChat(streamId){
     snapshot.forEach(doc=>{box.innerHTML+=`<p>${doc.data().text}</p>`;});
   });
 }
+
+// Add button event listeners
+document.getElementById("goLiveBtn").addEventListener("click", ()=>window.startShare());
+document.getElementById("sendBtn").addEventListener("click", ()=>window.sendComment());
+document.getElementById("likeBtn").addEventListener("click", ()=>window.like());
+
 </script>
 
 </body>
 </html>
+
+
 
 
 
